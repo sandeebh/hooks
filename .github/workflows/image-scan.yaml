@@ -1,0 +1,32 @@
+name: build-and-scan
+on:
+  workflow_dispatch:
+env: 
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  JSON_SERVER_URL: ${{ secrets.JSON_SERVER_URL }}
+jobs:
+  build-and-scan:
+    name: build-and-scan
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Extract Repo name
+        run: |
+          echo ${{github.repository}}
+          REPO_NAME=$(echo ${{github.repository}} | grep -oP "[^/]+$")
+      - name: Build an image from Dockerfile
+        run: |
+         sudo docker build --build-arg GITHUB_TOKEN=$GITHUB_TOKEN . -t demo:latest
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'demo:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+
+
